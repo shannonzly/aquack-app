@@ -5,6 +5,7 @@
 
 import Foundation
 
+@MainActor
 enum FoundationModelsCoachService {
 
     static var isAvailable: Bool {
