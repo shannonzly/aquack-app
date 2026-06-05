@@ -13,9 +13,9 @@ enum HydrationTheme {
     static let skyTop = Color(red: 0.88, green: 0.94, blue: 0.99)
     static let skyMid = Color(red: 0.95, green: 0.97, blue: 1.0)
     static let skyBottom = Color(red: 0.86, green: 0.93, blue: 0.99)
-    static let glassFill = Color.white.opacity(0.42)
+    static let glassFill = Color.white.opacity(0.88)
     static let glassStroke = Color.white.opacity(0.65)
-    static let fieldFill = Color.white.opacity(0.55)
+    static let fieldFill = Color.white.opacity(0.72)
     static let label = Color(red: 0.49, green: 0.55, blue: 0.60)
     static let title = Color(red: 0.10, green: 0.12, blue: 0.16)
     static let waterShallow = Color(red: 0.55, green: 0.82, blue: 0.95)
@@ -679,24 +679,10 @@ struct GlassSurfaceModifier: ViewModifier {
         content
             .background {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .background(
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(HydrationTheme.glassFill)
-                    )
+                    .fill(HydrationTheme.glassFill)
                     .overlay(
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [
-                                        HydrationTheme.glassStroke,
-                                        Color.white.opacity(0.2)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1
-                            )
+                            .stroke(HydrationTheme.glassStroke, lineWidth: 1)
                     )
                     .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
             }

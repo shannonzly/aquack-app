@@ -270,6 +270,7 @@ struct TutorialView: View {
     private func enableTutorialWeatherAndContinue() {
         setLocationWeatherEnabled(true)
         clearWeatherCache()
+        LocationManager.shared.requestAuthorization()
         currentPage = 4
         Task {
             await HydrationSync.refresh(

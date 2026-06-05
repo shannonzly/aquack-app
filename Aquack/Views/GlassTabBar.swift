@@ -39,53 +39,13 @@ private struct FloatingTabBarSurface: ViewModifier {
         content
             .background {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(.thinMaterial)
-                    .background(
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.34),
-                                        Color.white.opacity(0.12)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                    )
+                    .fill(HydrationTheme.glassFill)
                     .overlay {
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.95),
-                                        Color.white.opacity(0.50),
-                                        HydrationTheme.accentSoft.opacity(0.35)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 0.75
-                            )
+                            .strokeBorder(HydrationTheme.glassStroke, lineWidth: 1)
                     }
-                    .overlay(alignment: .top) {
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.70),
-                                        Color.white.opacity(0.10)
-                                    ],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(height: 0.5)
-                            .padding(.horizontal, 20)
-                            .padding(.top, 1)
-                    }
-                    .shadow(color: HydrationTheme.accent.opacity(0.18), radius: 24, y: 12)
-                    .shadow(color: .black.opacity(0.10), radius: 8, y: 4)
+                    .shadow(color: HydrationTheme.accent.opacity(0.12), radius: 16, y: 8)
+                    .shadow(color: .black.opacity(0.06), radius: 6, y: 3)
             }
     }
 }

@@ -68,6 +68,7 @@ struct RootView: View {
                 TutorialView(didFinishTutorial: $didFinishTutorial)
             }
         }
+        .preferredColorScheme(.light)
         .task {
             HydrationHistoryStore.migrateLegacyDailyIntakeIfNeeded(context: modelContext)
             await HydrationSync.refresh(recommendation: rec, modelContext: modelContext)
