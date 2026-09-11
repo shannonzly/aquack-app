@@ -7,11 +7,42 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		03007D52302D119F003A3CF6 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 03007D51302D119F003A3CF6 /* WidgetKit.framework */; };
+		03007D54302D119F003A3CF6 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 03007D53302D119F003A3CF6 /* SwiftUI.framework */; };
+		03007D65302D11A1003A3CF6 /* waterwidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 03007D4F302D119F003A3CF6 /* waterwidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A1HE4LTHK2DF6BA2200A40D01 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1HE4LTHK2DF6BA2200A40D02 /* HealthKit.framework */; };
 		A1W34THK2DF6BA2200A40D01 /* WeatherKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1W34THK2DF6BA2200A40D02 /* WeatherKit.framework */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		03007D63302D11A1003A3CF6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 03E34DB62DF6BA2200A40D07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 03007D4E302D119F003A3CF6;
+			remoteInfo = waterwidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		03007D6A302D11A1003A3CF6 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				03007D65302D11A1003A3CF6 /* waterwidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		03007D4F302D119F003A3CF6 /* waterwidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = waterwidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		03007D51302D119F003A3CF6 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		03007D53302D119F003A3CF6 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		03007D71302D3679003A3CF6 /* waterwidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = waterwidgetExtension.entitlements; sourceTree = "<group>"; };
 		03E34DBE2DF6BA2200A40D07 /* Aquack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Aquack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1C0NF1G2DF6BA2200A40D01 /* Aquack.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Aquack.xcconfig; sourceTree = "<group>"; };
 		A1HE4LTHK2DF6BA2200A40D02 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
@@ -19,6 +50,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		03007D69302D11A1003A3CF6 /* Exceptions for "waterwidget" folder in "waterwidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 03007D4E302D119F003A3CF6 /* waterwidgetExtension */;
+		};
 		03E34DC12DF6BA2200A40D07 /* Exceptions for "Aquack" folder in "Aquack" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -29,6 +67,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		03007D55302D119F003A3CF6 /* waterwidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				03007D69302D11A1003A3CF6 /* Exceptions for "waterwidget" folder in "waterwidgetExtension" target */,
+			);
+			path = waterwidget;
+			sourceTree = "<group>";
+		};
 		03E34DC02DF6BA2200A40D07 /* Aquack */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -37,9 +83,23 @@
 			path = Aquack;
 			sourceTree = "<group>";
 		};
+		A1SH4RED2DF6BA2200A40D01 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		03007D4C302D119F003A3CF6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				03007D54302D119F003A3CF6 /* SwiftUI.framework in Frameworks */,
+				03007D52302D119F003A3CF6 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		03E34DBB2DF6BA2200A40D07 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -52,6 +112,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		03007D50302D119F003A3CF6 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				03007D51302D119F003A3CF6 /* WidgetKit.framework */,
+				03007D53302D119F003A3CF6 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		0379C3772FCBC7AF00D0015F /* Recovered References */ = {
 			isa = PBXGroup;
 			children = (
@@ -64,8 +133,12 @@
 		03E34DB52DF6BA2200A40D07 = {
 			isa = PBXGroup;
 			children = (
+				03007D71302D3679003A3CF6 /* waterwidgetExtension.entitlements */,
 				03E34DC02DF6BA2200A40D07 /* Aquack */,
+				A1SH4RED2DF6BA2200A40D01 /* Shared */,
 				A1C0NF1G2DF6BA2200A40D03 /* Config */,
+				03007D55302D119F003A3CF6 /* waterwidget */,
+				03007D50302D119F003A3CF6 /* Frameworks */,
 				03E34DBF2DF6BA2200A40D07 /* Products */,
 				0379C3772FCBC7AF00D0015F /* Recovered References */,
 			);
@@ -75,6 +148,7 @@
 			isa = PBXGroup;
 			children = (
 				03E34DBE2DF6BA2200A40D07 /* Aquack.app */,
+				03007D4F302D119F003A3CF6 /* waterwidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -90,6 +164,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		03007D4E302D119F003A3CF6 /* waterwidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 03007D66302D11A1003A3CF6 /* Build configuration list for PBXNativeTarget "waterwidgetExtension" */;
+			buildPhases = (
+				03007D4B302D119F003A3CF6 /* Sources */,
+				03007D4C302D119F003A3CF6 /* Frameworks */,
+				03007D4D302D119F003A3CF6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				03007D55302D119F003A3CF6 /* waterwidget */,
+				A1SH4RED2DF6BA2200A40D01 /* Shared */,
+			);
+			name = waterwidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = waterwidgetExtension;
+			productReference = 03007D4F302D119F003A3CF6 /* waterwidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		03E34DBD2DF6BA2200A40D07 /* Aquack */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 03E34DDF2DF6BA2300A40D07 /* Build configuration list for PBXNativeTarget "Aquack" */;
@@ -97,13 +194,16 @@
 				03E34DBA2DF6BA2200A40D07 /* Sources */,
 				03E34DBB2DF6BA2200A40D07 /* Frameworks */,
 				03E34DBC2DF6BA2200A40D07 /* Resources */,
+				03007D6A302D11A1003A3CF6 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				03007D64302D11A1003A3CF6 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				03E34DC02DF6BA2200A40D07 /* Aquack */,
+				A1SH4RED2DF6BA2200A40D01 /* Shared */,
 			);
 			name = Aquack;
 			packageProductDependencies = (
@@ -119,9 +219,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1640;
+				LastSwiftUpdateCheck = 2650;
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
+					03007D4E302D119F003A3CF6 = {
+						CreatedOnToolsVersion = 26.5;
+					};
 					03E34DBD2DF6BA2200A40D07 = {
 						CreatedOnToolsVersion = 16.4;
 						SystemCapabilities = {
@@ -150,11 +253,19 @@
 			projectRoot = "";
 			targets = (
 				03E34DBD2DF6BA2200A40D07 /* Aquack */,
+				03007D4E302D119F003A3CF6 /* waterwidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		03007D4D302D119F003A3CF6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		03E34DBC2DF6BA2200A40D07 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -165,6 +276,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		03007D4B302D119F003A3CF6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		03E34DBA2DF6BA2200A40D07 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -174,7 +292,79 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		03007D64302D11A1003A3CF6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 03007D4E302D119F003A3CF6 /* waterwidgetExtension */;
+			targetProxy = 03007D63302D11A1003A3CF6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		03007D67302D11A1003A3CF6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = waterwidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NMK96XLTHF;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = waterwidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = waterwidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiaomingli.aquack.waterwidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		03007D68302D11A1003A3CF6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = waterwidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NMK96XLTHF;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = waterwidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = waterwidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiaomingli.aquack.waterwidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		03E34DDD2DF6BA2300A40D07 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = A1C0NF1G2DF6BA2200A40D01 /* Aquack.xcconfig */;
@@ -321,12 +511,15 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiaomingli.aquack;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -357,18 +550,30 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiaomingli.aquack;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		03007D66302D11A1003A3CF6 /* Build configuration list for PBXNativeTarget "waterwidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				03007D67302D11A1003A3CF6 /* Debug */,
+				03007D68302D11A1003A3CF6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		03E34DB92DF6BA2200A40D07 /* Build configuration list for PBXProject "hydrationduck" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

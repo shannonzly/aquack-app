@@ -7,15 +7,26 @@ import Foundation
 
 enum ContextualCoachService {
 
+    private static var unit: VolumeUnit { VolumeUnit.current }
+    private static var unitLabel: String { unit.abbreviation }
+
+    private static func amount(_ ounces: Double) -> Int {
+        unit.displayAmount(fromOunces: ounces)
+    }
+
+    private static func amount(_ ounces: Int) -> Int {
+        amount(Double(ounces))
+    }
+
     static func openingMessage(context: CoachContext) -> String {
         if context.intakeTodayOz <= 1 {
-            return "Hey! Start with an easy 8 oz sip and I'll help pace the rest of your day."
+            return "Hey! Start with an easy \(amount(8)) \(unitLabel) sip and I'll help pace the rest of your day."
         }
         if context.remainingOz == 0 {
-            return "You hit your \(context.goalTodayOz) oz goal today — great consistency!"
+            return "You hit your \(amount(context.goalTodayOz)) \(unitLabel) goal today — great consistency!"
         }
         let pct = Int((context.intakeTodayOz / Double(max(context.goalTodayOz, 1))) * 100)
-        return "You're at \(Int(context.intakeTodayOz)) / \(context.goalTodayOz) oz (\(pct)%). \(nextSipSuggestion(context))"
+        return "You're at \(amount(context.intakeTodayOz)) / \(amount(context.goalTodayOz)) \(unitLabel) (\(pct)%). \(nextSipSuggestion(context))"
     }
 
     static func reply(to userMessage: String, context: CoachContext) -> String {
@@ -31,7 +42,7 @@ enum ContextualCoachService {
             return goalExplanation(context)
         }
         if matches(message, any: ["how much", "remaining", "left today", "left to drink"]) {
-            return "You have about \(context.remainingOz) oz left today. Try splitting it into 3–4 small sips."
+            return "You have about \(amount(context.remainingOz)) \(unitLabel) left today. Try splitting it into 3–4 small sips."
         }
         if matches(message, any: ["reminder", "remind", "notification"]) {
             return reminderAdvice(context)
@@ -40,10 +51,10 @@ enum ContextualCoachService {
             return habitInsight(context)
         }
         if let temp = context.temperatureF, temp >= 85, matches(message, any: ["hot", "warm", "weather", "heat", "temperature"]) {
-            return "It's warm out (\(Int(temp))°F). Add an extra 8–12 oz this afternoon and sip more often."
+            return "It's warm out (\(TemperatureUnit.current.displayString(fromFahrenheit: temp))). Add an extra \(amount(8))–\(amount(12)) \(unitLabel) this afternoon and sip more often."
         }
         if context.habitProfile.longestGapHours >= 4, matches(message, any: ["gap", "forget", "behind", "catch up"]) {
-            return "I noticed long gaps between drinks. Aim for a sip every 60–90 minutes — even 6 oz counts."
+            return "I noticed long gaps between drinks. Aim for a sip every 60–90 minutes — even \(amount(6)) \(unitLabel) counts."
         }
         if context.remainingOz == 0 {
             return "You're done for today! A light sip before bed is optional, but you've already nailed your goal."
@@ -54,15 +65,15 @@ enum ContextualCoachService {
     // MARK: - Reply builders
 
     private static func progressSummary(_ context: CoachContext) -> String {
-        let intake = Int(context.intakeTodayOz)
-        let goal = context.goalTodayOz
-        let pct = Int((context.intakeTodayOz / Double(max(goal, 1))) * 100)
+        let intake = amount(context.intakeTodayOz)
+        let goal = amount(context.goalTodayOz)
+        let pct = Int((context.intakeTodayOz / Double(max(context.goalTodayOz, 1))) * 100)
 
         if context.remainingOz == 0 {
-            return "You're at \(intake)/\(goal) oz — goal complete! Your consistency over the past 2 weeks is \(consistencyLabel(context))."
+            return "You're at \(intake)/\(goal) \(unitLabel) — goal complete! Your consistency over the past 2 weeks is \(consistencyLabel(context))."
         }
 
-        var parts = ["You're at \(intake)/\(goal) oz (\(pct)%), with \(context.remainingOz) oz to go."]
+        var parts = ["You're at \(intake)/\(goal) \(unitLabel) (\(pct)%), with \(amount(context.remainingOz)) \(unitLabel) to go."]
         if let last = context.latestDrinkAt {
             parts.append("Last drink was \(relativeTime(from: last)).")
         }
@@ -72,11 +83,11 @@ enum ContextualCoachService {
 
     private static func nextDrinkAdvice(_ context: CoachContext) -> String {
         if context.remainingOz == 0 {
-            return "You're all set for today! If you want one more, a small 4–6 oz sip is fine."
+            return "You're all set for today! If you want one more, a small \(amount(4))–\(amount(6)) \(unitLabel) sip is fine."
         }
 
         let sipOz = min(12, max(6, context.remainingOz / max(3, context.remainingOz / 8)))
-        var advice = "Try \(sipOz) oz now"
+        var advice = "Try \(amount(sipOz)) \(unitLabel) now"
 
         if let last = context.latestDrinkAt {
             let hoursSince = Date().timeIntervalSince(last) / 3600
@@ -106,13 +117,13 @@ enum ContextualCoachService {
             factors.append("today's \(Int(context.stepsToday)) steps")
         }
         if let temp = context.temperatureF, temp >= 80 {
-            factors.append("the \(Int(temp))°F weather")
+            factors.append("the \(TemperatureUnit.current.displayString(fromFahrenheit: temp)) weather")
         }
         if context.habitProfile.daysAnalyzed >= 3 {
             factors.append("your recent drinking habits")
         }
         let factorList = factors.joined(separator: ", ")
-        return "Your \(context.goalTodayOz) oz goal blends \(factorList). It adjusts as your activity and habits change."
+        return "Your \(amount(context.goalTodayOz)) \(unitLabel) goal blends \(factorList). It adjusts as your activity and habits change."
     }
 
     private static func reminderAdvice(_ context: CoachContext) -> String {
@@ -132,18 +143,18 @@ enum ContextualCoachService {
         guard profile.daysAnalyzed >= 3 else {
             return "Keep logging for a few more days and I'll spot your patterns. Consistency builds from small, regular sips."
         }
-        let avg = Int(profile.averageDailyIntakeOz)
+        let avg = amount(profile.averageDailyIntakeOz)
         let label = consistencyLabel(context)
         if profile.longestGapHours >= 4 {
-            return "You average \(avg) oz/day with \(label) consistency, but gaps over \(Int(profile.longestGapHours)) hours show up. Shorter, more frequent sips would help."
+            return "You average \(avg) \(unitLabel)/day with \(label) consistency, but gaps over \(Int(profile.longestGapHours)) hours show up. Shorter, more frequent sips would help."
         }
-        return "Over the last \(profile.daysAnalyzed) days you average \(avg) oz/day — \(label) consistency. \(nextSipSuggestion(context))"
+        return "Over the last \(profile.daysAnalyzed) days you average \(avg) \(unitLabel)/day — \(label) consistency. \(nextSipSuggestion(context))"
     }
 
     private static func nextSipSuggestion(_ context: CoachContext) -> String {
         if context.remainingOz == 0 { return "You're all set for today." }
         let sip = min(12, max(6, context.remainingOz / 3))
-        return "A quick \(sip) oz sip now would keep you on track."
+        return "A quick \(amount(sip)) \(unitLabel) sip now would keep you on track."
     }
 
     private static func consistencyLabel(_ context: CoachContext) -> String {

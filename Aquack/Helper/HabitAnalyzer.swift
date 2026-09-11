@@ -30,7 +30,7 @@ enum HabitAnalyzer {
         let entries = HydrationHistoryStore.entriesForLastDays(14, context: context)
         guard !entries.isEmpty else { return .empty }
 
-        let grouped = Dictionary(grouping: entries) { Calendar.current.startOfDay(for: $0.timestamp) }
+        let grouped = Dictionary(grouping: entries) { DailyResetPreference.dayBucket(for: $0.timestamp) }
         let dayCount = max(grouped.count, 1)
         let totalOz = entries.reduce(0) { $0 + $1.ounces }
         let averageDaily = totalOz / Double(dayCount)

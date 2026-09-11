@@ -16,6 +16,9 @@ private enum ProfileStorageKey {
 struct ProfileView: View {
     @EnvironmentObject var rec: Change
     @Environment(\.modelContext) private var modelContext
+    @AppStorage(AppStorageKey.volumeUnit) private var volumeUnitRaw = VolumeUnit.ounces.rawValue
+    @AppStorage(AppStorageKey.temperatureUnit) private var temperatureUnitRaw = TemperatureUnit.fahrenheit.rawValue
+    @AppStorage(AppStorageKey.weightUnit) private var weightUnitRaw = WeightUnit.pounds.rawValue
 
     @State private var dailyGoal: SettingsInfo.Goal = .rec
     @State private var customGoal = ""
@@ -23,6 +26,14 @@ struct ProfileView: View {
     @State private var usedStepsData = false
     @State private var usedLiveWeather = false
     @State private var isUpdating = false
+
+    private var volumeUnit: VolumeUnit { VolumeUnit(rawValue: volumeUnitRaw) ?? .ounces }
+    private var temperatureUnit: TemperatureUnit { TemperatureUnit(rawValue: temperatureUnitRaw) ?? .fahrenheit }
+    private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .pounds }
+
+    private var weightField: Binding<String> {
+        WeightUnit.displayBinding(storedPounds: $rec.weight)
+    }
 
     var body: some View {
         HydrationPageShell(bubbleIntensity: 0.55) {
@@ -36,7 +47,7 @@ struct ProfileView: View {
 
                     profileSection(title: "Your body", systemImage: "person.fill") {
                         GlassInsetField(label: "Height (cm)", text: $rec.height)
-                        GlassInsetField(label: "Weight (lb)", text: $rec.weight)
+                        GlassInsetField(label: "Weight (\(weightUnit.abbreviation))", text: weightField)
                         GlassInsetField(label: "Age", text: $rec.age, keyboard: .numberPad)
                     }
 
@@ -76,7 +87,11 @@ struct ProfileView: View {
                             }
 
                             if dailyGoal == .custom {
-                                GlassInsetField(label: "Custom amount (oz)", text: $customGoal, keyboard: .numberPad)
+                                GlassInsetField(
+                                    label: "Custom amount (\(volumeUnit.abbreviation))",
+                                    text: $customGoal,
+                                    keyboard: .numberPad
+                                )
                             }
 
                             PrimaryWaterButton(title: "Save goal") {
@@ -98,7 +113,10 @@ struct ProfileView: View {
             loadGoalSelection()
         }
         .onChange(of: rec.goalAmount) { _, _ in
-            if rec.usingRec { customGoal = rec.goalAmount }
+            if rec.usingRec { refreshCustomGoalDisplay() }
+        }
+        .onChange(of: volumeUnitRaw) { _, _ in
+            refreshCustomGoalDisplay()
         }
     }
 
@@ -107,10 +125,10 @@ struct ProfileView: View {
     private var recommendedHero: some View {
         VStack(spacing: 4) {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(displayRecommendedOz)
+                Text(displayRecommendedAmount)
                     .font(HydrationTypography.metricLarge)
                     .foregroundStyle(HydrationTheme.accent)
-                Text("oz")
+                Text(volumeUnit.abbreviation)
                     .font(HydrationTypography.bodyEmphasis)
                     .foregroundStyle(HydrationTheme.label)
             }
@@ -122,11 +140,14 @@ struct ProfileView: View {
         .padding(.vertical, HomeLayout.cardSpacing)
     }
 
-    private var displayRecommendedOz: String {
+    private var displayRecommendedAmount: String {
+        let oz: Double
         if let breakdown = hydrationBreakdown {
-            return "\(breakdown.totalOz)"
+            oz = Double(breakdown.totalOz)
+        } else {
+            oz = Double(rec.recommendedAmount.ozAmountInt)
         }
-        return rec.recommendedAmount.normalizedOzString
+        return volumeUnit.displayString(fromOunces: oz)
     }
 
     // MARK: - Why this amount
@@ -150,7 +171,7 @@ struct ProfileView: View {
                             if let temp = rec.lastWeatherTempF {
                                 dataChip(
                                     icon: "thermometer.medium",
-                                    text: "\(Int(temp))°F\(usedLiveWeather ? "" : " (est.)")"
+                                    text: "\(temperatureUnit.displayString(fromFahrenheit: temp))\(usedLiveWeather ? "" : " (est.)")"
                                 )
                             }
                         }
@@ -159,6 +180,11 @@ struct ProfileView: View {
                             .font(HydrationTypography.footnote)
                             .foregroundStyle(HydrationTheme.label)
                             .fixedSize(horizontal: false, vertical: true)
+
+                        if usedLiveWeather {
+                            WeatherAttributionView()
+                                .padding(.top, 4)
+                        }
                     }
                 }
 
@@ -170,7 +196,10 @@ struct ProfileView: View {
 
                         breakdownRow("Base (weight × gender)", breakdown.baseOz)
                         breakdownRow("Activity level", breakdown.activityOz)
-                        breakdownRow("Step bonus (~12 oz per 10k steps)", breakdown.stepsOz)
+                        breakdownRow(
+                            "Step bonus (~\(volumeUnit.displayAmount(fromOunces: 12)) \(volumeUnit.abbreviation) per 10k steps)",
+                            breakdown.stepsOz
+                        )
                         breakdownRow("Temperature bonus", breakdown.heatOz)
                         if breakdown.habitOz != 0 {
                             breakdownRow("Learned from your history", breakdown.habitOz)
@@ -213,7 +242,14 @@ struct ProfileView: View {
     }
 
     private var profileSummary: String {
-        let weight = rec.weight.isEmpty ? "—" : "\(rec.weight) lb"
+        let weight: String
+        if rec.weight.isEmpty {
+            weight = "—"
+        } else if let pounds = Double(rec.weight) {
+            weight = "\(weightUnit.displayString(fromPounds: pounds)) \(weightUnit.abbreviation)"
+        } else {
+            weight = "\(rec.weight) \(weightUnit.abbreviation)"
+        }
         let activity = rec.activityLevel.displayLabel
         return "Profile: \(weight), \(rec.gender.rawValue), \(activity), \(rec.climate.rawValue)"
     }
@@ -224,7 +260,7 @@ struct ProfileView: View {
                 .font(HydrationTypography.body)
                 .foregroundStyle(HydrationTheme.title)
             Spacer(minLength: 12)
-            Text("\(oz) oz")
+            Text("\(volumeUnit.displayAmount(fromOunces: Double(oz))) \(volumeUnit.abbreviation)")
                 .font(HydrationTypography.bodyEmphasis)
                 .foregroundStyle(HydrationTheme.accent)
         }
@@ -247,8 +283,12 @@ struct ProfileView: View {
 
     private func loadGoalSelection() {
         dailyGoal = rec.usingRec ? .rec : .custom
-        customGoal = rec.goalAmount
-        if customGoal.isEmpty { customGoal = "64" }
+        refreshCustomGoalDisplay()
+    }
+
+    private func refreshCustomGoalDisplay() {
+        let oz = Double(max(1, rec.goalAmount.ozAmountInt))
+        customGoal = volumeUnit.displayString(fromOunces: oz)
     }
 
     private func loadSavedBreakdown() {
@@ -265,7 +305,9 @@ struct ProfileView: View {
             rec.goalAmount = rec.recommendedAmount.normalizedOzString
         } else {
             rec.usingRec = false
-            rec.goalAmount = customGoal.isEmpty ? "64" : customGoal
+            let entered = Double(customGoal.filter { $0.isNumber || $0 == "." }) ?? 0
+            let oz = max(1, Int(volumeUnit.toOunces(entered).rounded()))
+            rec.goalAmount = "\(oz)"
         }
     }
 

@@ -10,30 +10,66 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var rec: Change
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
 
-    @State private var intakeToday: Double = 0
+    @AppStorage(AppStorageKey.volumeUnit) private var volumeUnitRaw = VolumeUnit.ounces.rawValue
+    @AppStorage(AppStorageKey.temperatureUnit) private var temperatureUnitRaw = TemperatureUnit.fahrenheit.rawValue
+    @AppStorage(AppStorageKey.weightUnit) private var weightUnitRaw = WeightUnit.pounds.rawValue
+    @AppStorage(AppStorageKey.openRetrospectiveLog) private var openRetrospectiveLog = false
+
+    @State var intakeToday: Double = 0
+    @State private var recentLogs: [HydrationLogEntry] = []
     @State private var showWater = false
+    @State private var openWaterForRetrospective = false
     @State private var displayedProgress: Double = 0
+    @State private var undoEntryPersistentID: PersistentIdentifier?
+    @State private var showUndoBanner = false
+    @State private var undoHideTask: Task<Void, Never>?
 
-    private var goalOz: Int { max(1, rec.goalAmount.ozAmountInt) }
+    private var volumeUnit: VolumeUnit { VolumeUnit(rawValue: volumeUnitRaw) ?? .ounces }
+    private var temperatureUnit: TemperatureUnit { TemperatureUnit(rawValue: temperatureUnitRaw) ?? .fahrenheit }
+    private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .pounds }
+    var goalOz: Int { max(1, rec.goalAmount.ozAmountInt) }
     private var loggedOz: Int { Int(intakeToday.rounded()) }
     private var progress: Double { min(max(intakeToday / Double(goalOz), 0), 1) }
     private var remainingOz: Int { max(0, goalOz - loggedOz) }
+    private var goalDisplay: Int { volumeUnit.displayAmount(fromOunces: Double(goalOz)) }
+    private var loggedDisplay: Int { volumeUnit.displayAmount(fromOunces: Double(loggedOz)) }
+    private var remainingDisplay: Int { volumeUnit.displayAmount(fromOunces: Double(remainingOz)) }
+    private var weightDisplay: String {
+        guard let pounds = Double(rec.weight), !rec.weight.isEmpty else {
+            return rec.weight.isEmpty ? "—" : rec.weight
+        }
+        return weightUnit.displayString(fromPounds: pounds)
+    }
 
     var body: some View {
         GeometryReader { viewport in
             ZStack {
                 homeScroll(viewportHeight: HomeLayout.heroViewportHeight(in: viewport.size.height))
 
+                if showUndoBanner {
+                    VStack {
+                        Spacer()
+                        undoBanner
+                            .padding(.horizontal, HomeLayout.horizontalPadding)
+                            .padding(.bottom, HomeLayout.floatingTabBarInset + 12)
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(2)
+                }
+
                 if showWater {
-                    WaterView {
+                    WaterView(openForRetrospective: openWaterForRetrospective) {
                         refreshIntake()
+                        presentUndoBanner()
                         Task {
                             await HydrationSync.refresh(recommendation: rec, modelContext: modelContext, force: true)
                         }
                     } onBack: {
                         withAnimation(.easeInOut(duration: 0.35)) {
                             showWater = false
+                            openWaterForRetrospective = false
                         }
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -42,9 +78,23 @@ struct HomeView: View {
             }
         }
         .animation(.easeInOut(duration: 0.35), value: showWater)
+        .animation(.easeInOut(duration: 0.25), value: showUndoBanner)
         .onAppear {
             refreshIntake()
             displayedProgress = progress
+            handleRetrospectiveDeepLinkIfNeeded()
+        }
+        .onChange(of: openRetrospectiveLog) { _, shouldOpen in
+            guard shouldOpen else { return }
+            handleRetrospectiveDeepLinkIfNeeded()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            refreshIntake()
+            handleRetrospectiveDeepLinkIfNeeded()
+            withAnimation(.easeInOut(duration: 0.75)) {
+                displayedProgress = progress
+            }
         }
         .onChange(of: progress) { _, newValue in
             guard !showWater else { return }
@@ -89,6 +139,16 @@ struct HomeView: View {
 
                     VStack(spacing: 12) {
                         PrimaryWaterButton(title: "Log water", systemImage: "drop.fill") {
+                            openWaterForRetrospective = false
+                            withAnimation(.easeInOut(duration: 0.35)) {
+                                showWater = true
+                            }
+                        }
+                        .frame(maxWidth: HomeLayout.heroButtonMaxWidth)
+                        .frame(maxWidth: .infinity)
+
+                        OutlineWaterButton(title: "Log earlier", systemImage: "clock.arrow.circlepath") {
+                            openWaterForRetrospective = true
                             withAnimation(.easeInOut(duration: 0.35)) {
                                 showWater = true
                             }
@@ -115,7 +175,9 @@ struct HomeView: View {
 
     private func detailsSection(proxy: ScrollViewProxy) -> some View {
         let healthConnected = UserDefaults.standard.bool(forKey: AppStorageKey.healthStepsEnabled)
-        let weatherText = rec.lastWeatherTempF.map { "\(Int($0))" } ?? "—"
+        let weatherText = rec.lastWeatherTempF.map {
+            "\(temperatureUnit.displayAmount(fromFahrenheit: $0))"
+        } ?? "—"
 
         return VStack(alignment: .leading, spacing: HomeLayout.sectionSpacing) {
             OutlineWaterButton(title: "Back to goal", systemImage: "chevron.compact.up") {
@@ -135,15 +197,15 @@ struct HomeView: View {
             ) {
                 StatTile(
                     title: "Remaining",
-                    value: "\(remainingOz)",
-                    unit: "oz",
+                    value: "\(remainingDisplay)",
+                    unit: volumeUnit.abbreviation,
                     icon: "drop.fill",
                     gradient: [HydrationTheme.accent, HydrationTheme.waterDeep]
                 )
                 StatTile(
                     title: "Weight",
-                    value: rec.weight.isEmpty ? "—" : rec.weight,
-                    unit: "lb",
+                    value: weightDisplay,
+                    unit: weightUnit.abbreviation,
                     icon: "person.fill",
                     gradient: [HydrationTheme.accentSoft, HydrationTheme.accent]
                 )
@@ -169,7 +231,7 @@ struct HomeView: View {
                     StatTile(
                         title: "Weather",
                         value: weatherText,
-                        unit: "°F",
+                        unit: temperatureUnit.symbol,
                         icon: "thermometer.medium",
                         gradient: [Color.orange, HydrationTheme.accent]
                     )
@@ -179,6 +241,26 @@ struct HomeView: View {
                         hint: "Enable in Settings",
                         icon: "cloud.sun"
                     )
+                }
+            }
+
+            if isShowingLiveWeatherKitData() {
+                WeatherAttributionView()
+            }
+
+            CapsuleSectionHeader(title: "Recent", systemImage: "clock")
+
+            GlassCard {
+                if recentLogs.isEmpty {
+                    Text("No drinks logged yet today. Tap Log water to start.")
+                        .hydrationFootnote()
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(Array(recentLogs.enumerated()), id: \.element.persistentModelID) { index, entry in
+                            if index > 0 { Divider().padding(.vertical, 8) }
+                            recentRow(entry)
+                        }
+                    }
                 }
             }
 
@@ -280,12 +362,12 @@ struct HomeView: View {
 
     private var goalLoggedCard: some View {
         HStack(spacing: 0) {
-            statColumn(label: "Goal", amount: goalOz)
+            statColumn(label: "Goal", amount: goalDisplay)
             Circle()
                 .fill(HydrationTheme.accentSoft)
                 .frame(width: 4, height: 4)
                 .padding(.horizontal, 10)
-            statColumn(label: "Logged", amount: loggedOz)
+            statColumn(label: "Logged", amount: loggedDisplay)
         }
         .padding(.vertical, 11)
         .padding(.horizontal, 18)
@@ -302,7 +384,7 @@ struct HomeView: View {
                 Text("\(amount)")
                     .font(.system(.body, design: .rounded).weight(.bold))
                     .foregroundStyle(HydrationTheme.title)
-                Text("oz")
+                Text(volumeUnit.abbreviation)
                     .font(HydrationTypography.footnote)
                     .foregroundStyle(HydrationTheme.title)
             }
@@ -311,16 +393,130 @@ struct HomeView: View {
     }
 
     private var hydrationTip: String {
+        let unit = volumeUnit.abbreviation
         if remainingOz == 0 {
             return "You hit your goal today—nice work! Keep sipping to stay steady."
         }
-        let sip = min(16, max(8, remainingOz / 4))
-        return "You're \(remainingOz) oz from your goal. Try \(sip) oz in the next hour!"
+        let sipOz = min(16, max(8, remainingOz / 4))
+        let sipDisplay = volumeUnit.displayAmount(fromOunces: Double(sipOz))
+        return "You're \(remainingDisplay) \(unit) from your goal. Try \(sipDisplay) \(unit) in the next hour!"
     }
 
     private func refreshIntake() {
         intakeToday = HydrationHistoryStore.todayIntakeOz(context: modelContext)
+        recentLogs = HydrationHistoryStore.recentEntries(limit: 3, context: modelContext)
         rec.dailyIntake = "\(loggedOz)"
+        WidgetSnapshotSync.publish(goalOz: goalOz, intakeOz: intakeToday)
+    }
+
+    private func recentRow(_ entry: HydrationLogEntry) -> some View {
+        HStack(spacing: 12) {
+            GradientIconBadge(
+                systemName: "drop.fill",
+                colors: [HydrationTheme.accent, HydrationTheme.waterDeep],
+                size: 28
+            )
+            VStack(alignment: .leading, spacing: 2) {
+                Text(recentTitle(for: entry))
+                    .font(HydrationTypography.bodyEmphasis)
+                    .foregroundStyle(HydrationTheme.title)
+                Text(relativeTime(from: entry.timestamp))
+                    .font(HydrationTypography.footnote)
+                    .foregroundStyle(HydrationTheme.label)
+            }
+            Spacer(minLength: 8)
+            Text("\(volumeUnit.displayAmount(fromOunces: entry.ounces)) \(volumeUnit.abbreviation)")
+                .font(HydrationTypography.bodyEmphasis)
+                .foregroundStyle(HydrationTheme.accent)
+            Button {
+                undo(entry)
+            } label: {
+                Text("Undo")
+                    .font(HydrationTypography.footnoteEmphasis)
+                    .foregroundStyle(HydrationTheme.label)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func recentTitle(for entry: HydrationLogEntry) -> String {
+        if let note = entry.note, !note.isEmpty { return note }
+        switch entry.source {
+        case "retrospective": return "Earlier drink"
+        case "legacy": return "Imported"
+        default: return "Water"
+        }
+    }
+
+    private func relativeTime(from date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        if interval < 60 { return "Just now" }
+        if interval < 3600 { return "\(Int(interval / 60))m ago" }
+        if interval < 86400 { return "\(Int(interval / 3600))h ago" }
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+
+    private var undoBanner: some View {
+        HStack(spacing: 12) {
+            Text("Drink logged")
+                .font(HydrationTypography.bodyEmphasis)
+                .foregroundStyle(HydrationTheme.title)
+            Spacer()
+            Button("Undo") {
+                if let id = undoEntryPersistentID,
+                   let entry = recentLogs.first(where: { $0.persistentModelID == id }) {
+                    undo(entry)
+                } else {
+                    _ = HydrationHistoryStore.deleteLatest(context: modelContext)
+                    refreshIntake()
+                    dismissUndoBanner()
+                }
+            }
+            .font(HydrationTypography.bodyEmphasis)
+            .foregroundStyle(HydrationTheme.accent)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .glassSurface(cornerRadius: 18)
+    }
+
+    private func presentUndoBanner() {
+        recentLogs = HydrationHistoryStore.recentEntries(limit: 3, context: modelContext)
+        undoEntryPersistentID = recentLogs.first?.persistentModelID
+        showUndoBanner = true
+        undoHideTask?.cancel()
+        undoHideTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            guard !Task.isCancelled else { return }
+            dismissUndoBanner()
+        }
+    }
+
+    private func dismissUndoBanner() {
+        showUndoBanner = false
+        undoEntryPersistentID = nil
+        undoHideTask?.cancel()
+        undoHideTask = nil
+    }
+
+    private func undo(_ entry: HydrationLogEntry) {
+        HydrationHistoryStore.delete(entry, context: modelContext)
+        refreshIntake()
+        dismissUndoBanner()
+        withAnimation(.easeInOut(duration: 0.75)) {
+            displayedProgress = progress
+        }
+    }
+
+    private func handleRetrospectiveDeepLinkIfNeeded() {
+        guard openRetrospectiveLog else { return }
+        openRetrospectiveLog = false
+        openWaterForRetrospective = true
+        withAnimation(.easeInOut(duration: 0.35)) {
+            showWater = true
+        }
     }
 
     private func formattedCount(_ value: Int) -> String {

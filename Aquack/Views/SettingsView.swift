@@ -23,10 +23,18 @@ struct SettingsView: View {
     @AppStorage(AppStorageKey.personalizedGoalEnabled) private var personalizedGoalEnabled = true
     @AppStorage(AppStorageKey.smartRemindersEnabled) private var smartRemindersEnabled = true
     @AppStorage(AppStorageKey.duckCoachEnabled) private var duckCoachEnabled = true
+    @AppStorage(AppStorageKey.forgotToLogEnabled) private var forgotToLogEnabled = true
+    @AppStorage(AppStorageKey.volumeUnit) private var volumeUnitRaw = VolumeUnit.ounces.rawValue
+    @AppStorage(AppStorageKey.temperatureUnit) private var temperatureUnitRaw = TemperatureUnit.fahrenheit.rawValue
+    @AppStorage(AppStorageKey.weightUnit) private var weightUnitRaw = WeightUnit.pounds.rawValue
+    @AppStorage(AppStorageKey.dailyResetMinutes) private var dailyResetMinutes = 0
+    @AppStorage(AppStorageKey.themeRevision) private var themeRevision = 0
 
     @State private var selectedInterval: SettingsInfo.Interval = .one
     @State private var selectedGoal: SettingsInfo.Goal = .rec
     @State private var customGoalValue: String = ""
+    @State private var themeMode: ThemeColorMode = .default
+    @State private var customThemeColor: Color = ThemePreferences.color(.defaultAccent)
 
     @State private var notificationsEnabled = false
     @State private var notificationTitle = ""
@@ -36,15 +44,148 @@ struct SettingsView: View {
     @State private var healthAuthTrigger = 0
     @AppStorage("didFinishTutorial") private var didFinishTutorial = true
 
+    private var volumeUnit: VolumeUnit {
+        VolumeUnit(rawValue: volumeUnitRaw) ?? .ounces
+    }
+
+    private var selectedVolumeUnit: Binding<VolumeUnit> {
+        Binding(
+            get: { VolumeUnit(rawValue: volumeUnitRaw) ?? .ounces },
+            set: { volumeUnitRaw = $0.rawValue }
+        )
+    }
+
+    private var selectedTemperatureUnit: Binding<TemperatureUnit> {
+        Binding(
+            get: { TemperatureUnit(rawValue: temperatureUnitRaw) ?? .fahrenheit },
+            set: { temperatureUnitRaw = $0.rawValue }
+        )
+    }
+
+    private var selectedWeightUnit: Binding<WeightUnit> {
+        Binding(
+            get: { WeightUnit(rawValue: weightUnitRaw) ?? .pounds },
+            set: { weightUnitRaw = $0.rawValue }
+        )
+    }
+
+    private var resetTime: Binding<Date> {
+        DailyResetPreference.dateBinding(minutes: $dailyResetMinutes)
+    }
+
     var body: some View {
         HydrationPageShell(bubbleIntensity: 0.5) {
             KeyboardDismissingScrollView {
                 VStack(spacing: HomeLayout.sectionSpacing) {
                     PageHeroHeader(
                         title: "Settings",
-                        subtitle: "Reminders, goals, and personalization",
+                        subtitle: "Reminders, goals, theme, and personalization",
                         systemImage: "gearshape.fill"
                     )
+
+                    settingsSection(title: "Preferences", systemImage: "slider.horizontal.3") {
+                        VStack(alignment: .leading, spacing: HomeLayout.cardSpacing + 4) {
+                            Text("Volume unit")
+                                .font(HydrationTypography.bodyEmphasis)
+                                .foregroundStyle(HydrationTheme.title)
+                            Picker("Volume unit", selection: selectedVolumeUnit) {
+                                ForEach(VolumeUnit.allCases) { unit in
+                                    Text(unit.abbreviation.uppercased()).tag(unit)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .onChange(of: volumeUnitRaw) { _, _ in
+                                refreshCustomGoalDisplay()
+                                WidgetSnapshotSync.publishFromContext(
+                                    context: modelContext,
+                                    goalOz: rec.goalAmount.ozAmountInt
+                                )
+                            }
+
+                            Divider()
+
+                            Text("Weight unit")
+                                .font(HydrationTypography.bodyEmphasis)
+                                .foregroundStyle(HydrationTheme.title)
+                            Picker("Weight unit", selection: selectedWeightUnit) {
+                                ForEach(WeightUnit.allCases) { unit in
+                                    Text(unit.abbreviation).tag(unit)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+
+                            Divider()
+
+                            Text("Temperature unit")
+                                .font(HydrationTypography.bodyEmphasis)
+                                .foregroundStyle(HydrationTheme.title)
+                            Picker("Temperature unit", selection: selectedTemperatureUnit) {
+                                ForEach(TemperatureUnit.allCases) { unit in
+                                    Text(unit.symbol).tag(unit)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+
+                            Divider()
+
+                            Text("Daily reset time")
+                                .font(HydrationTypography.bodyEmphasis)
+                                .foregroundStyle(HydrationTheme.title)
+                            DatePicker(
+                                "Reset time",
+                                selection: resetTime,
+                                displayedComponents: .hourAndMinute
+                            )
+                            Text("Your water count starts over at this time each day.")
+                                .hydrationFootnote()
+                        }
+                    }
+
+                    settingsSection(title: "Appearance", systemImage: "paintpalette.fill") {
+                        VStack(alignment: .leading, spacing: HomeLayout.cardSpacing + 4) {
+                            Text("Color theme")
+                                .font(HydrationTypography.bodyEmphasis)
+                                .foregroundStyle(HydrationTheme.title)
+                            Picker("Color theme", selection: $themeMode) {
+                                ForEach(ThemeColorMode.allCases) { mode in
+                                    Text(mode.label).tag(mode)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .onChange(of: themeMode) { _, newMode in
+                                ThemePreferences.apply(
+                                    mode: newMode,
+                                    custom: newMode == .custom ? customThemeColor : nil,
+                                    revision: $themeRevision
+                                )
+                            }
+
+                            if themeMode == .custom {
+                                Divider()
+                                ColorPicker(
+                                    "Theme color",
+                                    selection: $customThemeColor,
+                                    supportsOpacity: false
+                                )
+                                .font(HydrationTypography.body)
+                                .foregroundStyle(HydrationTheme.title)
+                                .onChange(of: customThemeColor) { _, newColor in
+                                    ThemePreferences.apply(
+                                        mode: .custom,
+                                        custom: newColor,
+                                        revision: $themeRevision
+                                    )
+                                }
+                            }
+
+                            Text(
+                                themeMode == .custom
+                                    ? "Your color is used for buttons, progress, and the widget."
+                                    : "Aquack blue across the app and widget."
+                            )
+                            .hydrationFootnote()
+                        }
+                    }
 
                     settingsSection(title: "Reminders", systemImage: "bell.fill") {
                         VStack(spacing: HomeLayout.cardSpacing + 4) {
@@ -90,6 +231,18 @@ struct SettingsView: View {
                                 Text("Reminders adapt to when you usually drink.")
                                     .hydrationFootnote()
                             }
+
+                            Divider()
+
+                            Toggle("Forgot to log? reminder", isOn: $forgotToLogEnabled)
+                                .disabled(!notificationsEnabled)
+                                .onChange(of: forgotToLogEnabled) { _, _ in
+                                    NotificationManager.shared.refreshForgotToLogReminder()
+                                }
+                            if notificationsEnabled {
+                                Text("Afternoon nudge to add drinks from earlier without picking an exact time.")
+                                    .hydrationFootnote()
+                            }
                         }
                     }
 
@@ -120,8 +273,12 @@ struct SettingsView: View {
                             .onChange(of: selectedGoal) { _, _ in syncGoalToRec() }
 
                             if selectedGoal == .custom {
-                                GlassInsetField(label: "Target (oz)", text: $customGoalValue, keyboard: .numberPad)
-                                    .onChange(of: customGoalValue) { _, _ in syncGoalToRec() }
+                                GlassInsetField(
+                                    label: "Target (\(volumeUnit.abbreviation))",
+                                    text: $customGoalValue,
+                                    keyboard: .numberPad
+                                )
+                                .onChange(of: customGoalValue) { _, _ in syncGoalToRec() }
                             } else {
                                 Text("We'll calculate your goal based on activity and weather.")
                                     .hydrationFootnote()
@@ -152,6 +309,9 @@ struct SettingsView: View {
                                         )
                                     }
                                 }
+
+                            WeatherAttributionView()
+                                .padding(.top, 4)
                         }
                     }
 
@@ -176,11 +336,11 @@ struct SettingsView: View {
             Task { await refreshPermissionStates() }
         }
         .onChange(of: rec.goalAmount) { _, _ in
-            if rec.usingRec { customGoalValue = rec.goalAmount }
+            if rec.usingRec { refreshCustomGoalDisplay() }
         }
         .onChange(of: rec.usingRec) { _, _ in
             selectedGoal = rec.usingRec ? .rec : .custom
-            customGoalValue = rec.goalAmount
+            refreshCustomGoalDisplay()
         }
     }
 
@@ -210,9 +370,16 @@ struct SettingsView: View {
         locationEnabled = UserDefaults.standard.bool(forKey: AppStorageKey.locationWeatherEnabled)
         notificationsEnabled = UserDefaults.standard.bool(forKey: AppStorageKey.notificationsUserEnabled)
 
+        themeMode = ThemeColorStore.mode
+        customThemeColor = ThemePreferences.color(ThemeColorStore.customRGB)
+
         selectedGoal = rec.usingRec ? .rec : .custom
-        customGoalValue = rec.goalAmount
-        if customGoalValue.isEmpty { customGoalValue = "64" }
+        refreshCustomGoalDisplay()
+    }
+
+    private func refreshCustomGoalDisplay() {
+        let oz = Double(max(1, rec.goalAmount.ozAmountInt))
+        customGoalValue = volumeUnit.displayString(fromOunces: oz)
     }
 
     private func saveNotificationMessage() {
@@ -226,7 +393,9 @@ struct SettingsView: View {
             rec.goalAmount = rec.recommendedAmount
         } else {
             rec.usingRec = false
-            rec.goalAmount = customGoalValue.isEmpty ? "64" : customGoalValue
+            let entered = Double(customGoalValue.filter { $0.isNumber || $0 == "." }) ?? 0
+            let oz = max(1, Int(volumeUnit.toOunces(entered).rounded()))
+            rec.goalAmount = "\(oz)"
         }
     }
 
@@ -243,6 +412,7 @@ struct SettingsView: View {
             rescheduleNotification()
         } else {
             NotificationManager.shared.cancelHydrationReminder()
+            NotificationManager.shared.cancelForgotToLogReminder()
         }
         if wantsWeather && LocationManager.shared.isAuthorized {
             await HydrationSync.refresh(
@@ -283,6 +453,7 @@ struct SettingsView: View {
             }
         } else {
             NotificationManager.shared.cancelHydrationReminder()
+            NotificationManager.shared.cancelForgotToLogReminder()
             UserDefaults.standard.set(false, forKey: AppStorageKey.notificationsUserEnabled)
             notificationsEnabled = false
         }

@@ -59,6 +59,7 @@ struct RootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("didFinishTutorial") private var didFinishTutorial = false
+    @AppStorage(AppStorageKey.themeRevision) private var themeRevision = 0
 
     var body: some View {
         Group {
@@ -68,17 +69,60 @@ struct RootView: View {
                 TutorialView(didFinishTutorial: $didFinishTutorial)
             }
         }
+        .animation(nil, value: themeRevision)
+        .tint(HydrationTheme.accent)
         .preferredColorScheme(.light)
         .task {
             HydrationHistoryStore.migrateLegacyDailyIntakeIfNeeded(context: modelContext)
+            WidgetSnapshotSync.flushPendingLogs(
+                context: modelContext,
+                goalOz: rec.goalAmount.ozAmountInt
+            )
+            await WeatherManager.shared.loadAttributionIfNeeded()
             await HydrationSync.refresh(recommendation: rec, modelContext: modelContext)
+            WidgetSnapshotSync.publishFromContext(
+                context: modelContext,
+                goalOz: rec.goalAmount.ozAmountInt
+            )
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
+            WidgetSnapshotSync.flushPendingLogs(
+                context: modelContext,
+                goalOz: rec.goalAmount.ozAmountInt
+            )
             Task {
                 await HydrationSync.refresh(recommendation: rec, modelContext: modelContext, force: true)
+                WidgetSnapshotSync.publishFromContext(
+                    context: modelContext,
+                    goalOz: rec.goalAmount.ozAmountInt
+                )
             }
         }
+        .onOpenURL { url in
+            handleWidgetURL(url)
+        }
+    }
+
+    private func handleWidgetURL(_ url: URL) {
+        guard url.scheme == "aquack", url.host == "log" else { return }
+        let ounces: Double = {
+            guard let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
+                  let raw = items.first(where: { $0.name == "ounces" })?.value,
+                  let value = Double(raw), value > 0 else {
+                return 8
+            }
+            return value
+        }()
+        WidgetSnapshotSync.flushPendingLogs(
+            context: modelContext,
+            goalOz: rec.goalAmount.ozAmountInt
+        )
+        HydrationHistoryStore.log(ounces: ounces, context: modelContext, source: "widget")
+        WidgetSnapshotSync.publishFromContext(
+            context: modelContext,
+            goalOz: rec.goalAmount.ozAmountInt
+        )
     }
 }
 
@@ -94,6 +138,7 @@ struct AquackApp: App {
 
     init() {
         AppLaunchDefaults.register()
+        NotificationManager.shared.configureDelegate()
     }
 
     var body: some Scene {

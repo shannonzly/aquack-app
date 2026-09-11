@@ -26,6 +26,14 @@ enum AppStorageKey {
     static let personalizedGoalEnabled = "personalizedGoalEnabled"
     static let smartRemindersEnabled = "smartRemindersEnabled"
     static let duckCoachEnabled = "duckCoachEnabled"
+    static let volumeUnit = "volumeUnit"
+    static let temperatureUnit = "temperatureUnit"
+    static let weightUnit = "weightUnit"
+    static let dailyResetMinutes = "dailyResetMinutes"
+    static let forgotToLogEnabled = "forgotToLogEnabled"
+    static let openRetrospectiveLog = "openRetrospectiveLog"
+    /// Bumped when theme changes so SwiftUI rebuilds with new accent colors.
+    static let themeRevision = "themeRevision"
 }
 
 extension String {
@@ -140,6 +148,7 @@ enum HydrationSync {
                     title: title,
                     body: body
                 )
+                NotificationManager.shared.refreshForgotToLogReminder()
             }
         }
 

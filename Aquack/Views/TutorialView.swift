@@ -1,6 +1,6 @@
 //
 //  TutorialView.swift
-//  Tutorial at the beginning: welcome, how it works, profile info (with default values), weather, directions, notifications, lets go
+//  Tutorial at the beginning: welcome, how it works, units, reset time, profile, weather, steps, notifications, lets go
 //  Aquack
 //
 
@@ -19,17 +19,54 @@ struct TutorialView: View {
     @State private var selectedInterval: SettingsInfo.Interval = .one
     @State private var isUpdatingProfile = false
     @State private var healthAuthTrigger = 0
+    @AppStorage(AppStorageKey.volumeUnit) private var volumeUnitRaw = VolumeUnit.ounces.rawValue
+    @AppStorage(AppStorageKey.temperatureUnit) private var temperatureUnitRaw = TemperatureUnit.fahrenheit.rawValue
+    @AppStorage(AppStorageKey.weightUnit) private var weightUnitRaw = WeightUnit.pounds.rawValue
+    @AppStorage(AppStorageKey.dailyResetMinutes) private var dailyResetMinutes = 0
+
+    private var selectedVolumeUnit: Binding<VolumeUnit> {
+        Binding(
+            get: { VolumeUnit(rawValue: volumeUnitRaw) ?? .ounces },
+            set: { volumeUnitRaw = $0.rawValue }
+        )
+    }
+
+    private var selectedTemperatureUnit: Binding<TemperatureUnit> {
+        Binding(
+            get: { TemperatureUnit(rawValue: temperatureUnitRaw) ?? .fahrenheit },
+            set: { temperatureUnitRaw = $0.rawValue }
+        )
+    }
+
+    private var selectedWeightUnit: Binding<WeightUnit> {
+        Binding(
+            get: { WeightUnit(rawValue: weightUnitRaw) ?? .pounds },
+            set: { weightUnitRaw = $0.rawValue }
+        )
+    }
+
+    private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .pounds }
+
+    private var weightField: Binding<String> {
+        WeightUnit.displayBinding(storedPounds: $rec.weight)
+    }
+
+    private var resetTime: Binding<Date> {
+        DailyResetPreference.dateBinding(minutes: $dailyResetMinutes)
+    }
 
     var body: some View {
         HydrationPageShell(interactive: true, bubbleIntensity: 0.6) {
             TabView(selection: $currentPage) {
                 welcomePage.tag(0)
                 howItWorksPage.tag(1)
-                profileInfoPage.tag(2)
-                weatherInfoPage.tag(3)
-                stepsInfoPage.tag(4)
-                notificationsInfoPage.tag(5)
-                letsGoPage.tag(6)
+                unitsPage.tag(2)
+                resetTimePage.tag(3)
+                profileInfoPage.tag(4)
+                weatherInfoPage.tag(5)
+                stepsInfoPage.tag(6)
+                notificationsInfoPage.tag(7)
+                letsGoPage.tag(8)
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
         }
@@ -44,7 +81,7 @@ struct TutorialView: View {
             }
         }
         .onChange(of: currentPage) { _, page in
-            if page == 2 {
+            if page == 4 {
                 ProfileDefaults.applyIfEmpty(to: rec)
             }
         }
@@ -86,6 +123,89 @@ struct TutorialView: View {
         }
     }
 
+    private var unitsPage: some View {
+        tutorialPage {
+            PageHeroHeader(
+                title: "Units",
+                subtitle: "Water, weight, and temperature",
+                systemImage: "ruler"
+            )
+            GlassCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Goals, weight, and weather will use these units. Change them anytime in Settings.")
+                        .hydrationFootnote()
+
+                    Text("Volume")
+                        .font(HydrationTypography.bodyEmphasis)
+                        .foregroundStyle(HydrationTheme.title)
+                    Picker("Volume unit", selection: selectedVolumeUnit) {
+                        ForEach(VolumeUnit.allCases) { unit in
+                            Text(unit.abbreviation.uppercased()).tag(unit)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Divider()
+
+                    Text("Weight")
+                        .font(HydrationTypography.bodyEmphasis)
+                        .foregroundStyle(HydrationTheme.title)
+                    Picker("Weight unit", selection: selectedWeightUnit) {
+                        ForEach(WeightUnit.allCases) { unit in
+                            Text(unit.abbreviation).tag(unit)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Divider()
+
+                    Text("Temperature")
+                        .font(HydrationTypography.bodyEmphasis)
+                        .foregroundStyle(HydrationTheme.title)
+                    Picker("Temperature unit", selection: selectedTemperatureUnit) {
+                        ForEach(TemperatureUnit.allCases) { unit in
+                            Text(unit.symbol).tag(unit)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
+            PrimaryWaterButton(title: "Continue") { currentPage = 3 }
+        }
+    }
+
+    private var resetTimePage: some View {
+        tutorialPage {
+            PageHeroHeader(
+                title: "Daily reset",
+                subtitle: "When your water count starts over",
+                systemImage: "clock.arrow.circlepath"
+            )
+            GlassCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Choose when “today” resets—midnight by default, or later if you stay up past midnight.")
+                        .hydrationFootnote()
+
+                    DatePicker(
+                        "Reset time",
+                        selection: resetTime,
+                        displayedComponents: .hourAndMinute
+                    )
+                    .labelsHidden()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Text("Change this anytime in Settings → Preferences.")
+                        .hydrationFootnote()
+                }
+            }
+            PrimaryWaterButton(title: "Continue") { currentPage = 4 }
+            skipButton {
+                dailyResetMinutes = 0
+                currentPage = 4
+            }
+        }
+    }
+
     private var profileInfoPage: some View {
         tutorialPage {
             PageHeroHeader(
@@ -99,7 +219,7 @@ struct TutorialView: View {
                         .hydrationFootnote()
 
                     GlassInsetField(label: "Height (cm)", text: $rec.height)
-                    GlassInsetField(label: "Weight (lb)", text: $rec.weight)
+                    GlassInsetField(label: "Weight (\(weightUnit.abbreviation))", text: weightField)
                     GlassInsetField(label: "Age", text: $rec.age, keyboard: .numberPad)
                     if let ageInt = Int(rec.age), !rec.age.isEmpty, ageInt < 15 {
                         Text("Age must be 15 or older")
@@ -129,7 +249,7 @@ struct TutorialView: View {
             PrimaryWaterButton(title: isUpdatingProfile ? "Saving…" : "Save & continue", disabled: isUpdatingProfile) {
                 saveProfileAndContinue()
             }
-            skipButton { currentPage = 3 }
+            skipButton { currentPage = 5 }
         }
     }
 
@@ -141,15 +261,18 @@ struct TutorialView: View {
                 systemImage: "cloud.sun.fill"
             )
             GlassCard {
-                Text("Your location is only used to read the current temperature through Apple Weather—nothing is stored on our servers.")
-                    .hydrationFootnote()
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Your location is only used to read the current temperature through Apple Weather—nothing is stored on our servers.")
+                        .hydrationFootnote()
+                    WeatherAttributionView()
+                }
             }
             PrimaryWaterButton(title: "Enable local weather") {
                 enableTutorialWeatherAndContinue()
             }
             skipButton {
                 setLocationWeatherEnabled(false)
-                currentPage = 4
+                currentPage = 6
             }
         }
     }
@@ -170,7 +293,7 @@ struct TutorialView: View {
             }
             skipButton {
                 UserDefaults.standard.set(false, forKey: AppStorageKey.healthStepsEnabled)
-                currentPage = 5
+                currentPage = 7
             }
         }
     }
@@ -204,7 +327,7 @@ struct TutorialView: View {
             }
             skipButton {
                 saveNotificationInterval()
-                currentPage = 6
+                currentPage = 8
             }
         }
     }
@@ -219,7 +342,7 @@ struct TutorialView: View {
             GlassCard {
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Profile tab — body info & daily goal", systemImage: "person.fill")
-                    Label("Settings tab — reminders & frequency", systemImage: "gearshape.fill")
+                    Label("Settings tab — units, reset time & reminders", systemImage: "gearshape.fill")
                 }
                 .font(HydrationTypography.body)
                 .foregroundStyle(HydrationTheme.label)
@@ -262,7 +385,7 @@ struct TutorialView: View {
             )
             await MainActor.run {
                 isUpdatingProfile = false
-                currentPage = 3
+                currentPage = 5
             }
         }
     }
@@ -271,7 +394,7 @@ struct TutorialView: View {
         setLocationWeatherEnabled(true)
         clearWeatherCache()
         LocationManager.shared.requestAuthorization()
-        currentPage = 4
+        currentPage = 6
         Task {
             await HydrationSync.refresh(
                 recommendation: rec,
@@ -286,7 +409,7 @@ struct TutorialView: View {
         UserDefaults.standard.set(true, forKey: AppStorageKey.healthStepsEnabled)
         let steps = await HealthManager.shared.connectSteps()
         rec.lastStepsToday = steps
-        currentPage = 5
+        currentPage = 7
         await HydrationSync.refresh(
             recommendation: rec,
             modelContext: modelContext,
@@ -310,8 +433,9 @@ struct TutorialView: View {
                     body: AquackCopy.defaultNotificationBody,
                     intervalMinutes: intervalMinutes
                 )
+                NotificationManager.shared.refreshForgotToLogReminder()
             }
-            await MainActor.run { currentPage = 6 }
+            await MainActor.run { currentPage = 8 }
         }
     }
 }

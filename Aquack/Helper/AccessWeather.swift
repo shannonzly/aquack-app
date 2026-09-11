@@ -12,6 +12,15 @@ private let weatherCacheMaxDistanceMeters: CLLocationDistance = 5_000
 
 private let log = Logger(subsystem: "com.xiaomingli.aquack", category: "Weather")
 
+func isLocationWeatherEnabled() -> Bool {
+    UserDefaults.standard.bool(forKey: AppStorageKey.locationWeatherEnabled)
+}
+
+func isShowingLiveWeatherKitData() -> Bool {
+    isLocationWeatherEnabled()
+        && UserDefaults.standard.bool(forKey: AppStorageKey.lastBreakdownUsedWeather)
+}
+
 func setLocationWeatherEnabled(_ enabled: Bool) {
     UserDefaults.standard.set(enabled, forKey: AppStorageKey.locationWeatherEnabled)
     if !enabled {

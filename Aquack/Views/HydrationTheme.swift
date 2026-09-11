@@ -8,8 +8,8 @@ import SwiftUI
 import UIKit
 
 enum HydrationTheme {
-    static let accent = Color(red: 0.29, green: 0.56, blue: 0.92)
-    static let accentSoft = Color(red: 0.62, green: 0.80, blue: 0.97)
+    static var accent: Color { ThemePreferences.accent }
+    static var accentSoft: Color { ThemePreferences.accentSoft }
     static let skyTop = Color(red: 0.88, green: 0.94, blue: 0.99)
     static let skyMid = Color(red: 0.95, green: 0.97, blue: 1.0)
     static let skyBottom = Color(red: 0.86, green: 0.93, blue: 0.99)
@@ -18,8 +18,8 @@ enum HydrationTheme {
     static let fieldFill = Color.white.opacity(0.72)
     static let label = Color(red: 0.49, green: 0.55, blue: 0.60)
     static let title = Color(red: 0.10, green: 0.12, blue: 0.16)
-    static let waterShallow = Color(red: 0.55, green: 0.82, blue: 0.95)
-    static let waterDeep = Color(red: 0.28, green: 0.62, blue: 0.86)
+    static var waterShallow: Color { ThemePreferences.waterShallow }
+    static var waterDeep: Color { ThemePreferences.waterDeep }
     static let iconGrayTop = Color(red: 0.62, green: 0.68, blue: 0.74)
     static let iconGrayBottom = Color(red: 0.48, green: 0.54, blue: 0.60)
 }

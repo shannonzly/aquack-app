@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import WidgetKit
 
 enum AppReset {
 
@@ -34,6 +35,14 @@ enum AppReset {
             AppStorageKey.personalizedGoalEnabled,
             AppStorageKey.smartRemindersEnabled,
             AppStorageKey.duckCoachEnabled,
+            AppStorageKey.volumeUnit,
+            AppStorageKey.temperatureUnit,
+            AppStorageKey.weightUnit,
+            AppStorageKey.dailyResetMinutes,
+            AppStorageKey.forgotToLogEnabled,
+            AppStorageKey.openRetrospectiveLog,
+            AppStorageKey.themeRevision,
+            "customDrinkSizes",
             "notificationTitle",
             "notificationBody",
             "notificationsInterval"
@@ -41,5 +50,7 @@ enum AppReset {
         for key in keys {
             UserDefaults.standard.removeObject(forKey: key)
         }
+        ThemeColorStore.clear()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }
